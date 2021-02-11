@@ -10,6 +10,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/btcsuite/btcd/chaincfg/chainhash"
+	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/lightningnetwork/lnd/channeldb"
@@ -112,6 +114,10 @@ var (
 			Action: "read",
 		}},
 		"/routerrpc.Router/HtlcInterceptor": {{
+			Entity: "offchain",
+			Action: "write",
+		}},
+		"/routerrpc.Router/DisableChannel": {{
 			Entity: "offchain",
 			Action: "write",
 		}},
@@ -696,4 +702,52 @@ func (s *Server) HtlcInterceptor(stream Router_HtlcInterceptorServer) error {
 
 	// run the forward interceptor.
 	return newForwardInterceptor(s, stream).run()
+}
+
+// GetChanPointFundingTxid returns the given channel point's funding txid in
+// raw bytes.
+func GetChanPointFundingTxid(chanPoint *lnrpc.ChannelPoint) (*chainhash.Hash, error) {
+	var txid []byte
+
+	// A channel point's funding txid can be get/set as a byte slice or a
+	// string. In the case it is a string, decode it.
+	switch chanPoint.GetFundingTxid().(type) {
+	case *lnrpc.ChannelPoint_FundingTxidBytes:
+		txid = chanPoint.GetFundingTxidBytes()
+	case *lnrpc.ChannelPoint_FundingTxidStr:
+		s := chanPoint.GetFundingTxidStr()
+		h, err := chainhash.NewHashFromStr(s)
+		if err != nil {
+			return nil, err
+		}
+
+		txid = h[:]
+	}
+
+	return chainhash.NewHash(txid)
+}
+
+func getChanPoint(chanPoint *lnrpc.ChannelPoint) (*wire.OutPoint, error) {
+	txid, err := GetChanPointFundingTxid(chanPoint)
+	if err != nil {
+		return nil, err
+	}
+	index := chanPoint.OutputIndex
+	return wire.NewOutPoint(txid, index), nil
+}
+
+// DisableChannel disables a channel, resulting in it not being able to
+// forward payments.
+func (s *Server) DisableChannel(_ context.Context, req *DisableChannelRequest) (*DisableChannelResponse, error) {
+	chanPoint, err := getChanPoint(req.GetChanPoint())
+	if err != nil {
+		return nil, err
+	}
+
+	err = s.cfg.RouterBackend.DisableChannel(*chanPoint)
+	if err != nil {
+		return nil, err
+	}
+
+	return &DisableChannelResponse{}, nil
 }

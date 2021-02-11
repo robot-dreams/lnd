@@ -569,7 +569,8 @@ func newRPCServer(cfg *Config, s *server, macService *macaroons.Service,
 	}
 	graph := s.localChanDB.ChannelGraph()
 	routerBackend := &routerrpc.RouterBackend{
-		SelfNode: selfNode.PubKeyBytes,
+		SelfNode:       selfNode.PubKeyBytes,
+		DisableChannel: s.chanStatusMgr.RequestDisable,
 		FetchChannelCapacity: func(chanID uint64) (btcutil.Amount,
 			error) {
 

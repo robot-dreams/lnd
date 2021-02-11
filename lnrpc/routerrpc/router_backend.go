@@ -11,6 +11,7 @@ import (
 	"github.com/btcsuite/btcd/btcec"
 
 	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
 	"github.com/lightningnetwork/lnd/channeldb"
 	"github.com/lightningnetwork/lnd/htlcswitch"
@@ -29,6 +30,10 @@ import (
 type RouterBackend struct {
 	// SelfNode is the vertex of the node sending the payment.
 	SelfNode route.Vertex
+
+	// DisableChannel disables a channel, resulting in it not being able to
+	// forward payments.
+	DisableChannel func(wire.OutPoint) error
 
 	// FetchChannelCapacity is a closure that we'll use the fetch the total
 	// capacity of a channel to populate in responses.

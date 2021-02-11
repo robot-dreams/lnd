@@ -407,6 +407,25 @@
       ],
       "default": "IN_FLIGHT"
     },
+    "lnrpcChannelPoint": {
+      "type": "object",
+      "properties": {
+        "funding_txid_bytes": {
+          "type": "string",
+          "format": "byte",
+          "description": "Txid of the funding transaction. When using REST, this field must be\nencoded as base64."
+        },
+        "funding_txid_str": {
+          "type": "string",
+          "description": "Hex-encoded string representing the byte-reversed hash of the funding\ntransaction."
+        },
+        "output_index": {
+          "type": "integer",
+          "format": "int64",
+          "title": "The index of the output of the funding transaction"
+        }
+      }
+    },
     "lnrpcChannelUpdate": {
       "type": "object",
       "properties": {
@@ -898,6 +917,9 @@
         }
       }
     },
+    "routerrpcDisableChannelResponse": {
+      "type": "object"
+    },
     "routerrpcFailureDetail": {
       "type": "string",
       "enum": [
@@ -1114,7 +1136,7 @@
         "hop_probability": {
           "type": "number",
           "format": "float",
-          "description": "The probability of success mission control should assign to hop in a route \nwhere it has no other information available. Higher values will make mission \ncontrol more willing to try hops that we have no information about, lower \nvalues will discourage trying these hops."
+          "description": "The probability of success mission control should assign to hop in a route\nwhere it has no other information available. Higher values will make mission\ncontrol more willing to try hops that we have no information about, lower\nvalues will discourage trying these hops."
         },
         "weight": {
           "type": "number",
