@@ -121,6 +121,12 @@ service Router {
     */
     rpc HtlcInterceptor (stream ForwardHtlcInterceptResponse)
         returns (stream ForwardHtlcInterceptRequest);
+
+    /*
+    SetChannelStatus sets the state of a channel (enabled, disabled, or auto).
+    */
+    rpc SetChannelStatus (SetChannelStatusRequest)
+        returns (SetChannelStatusResponse);
 }
 
 message SendPaymentRequest {
@@ -741,4 +747,19 @@ enum ResolveHoldForwardAction {
     SETTLE = 0;
     FAIL = 1;
     RESUME = 2;
+}
+
+message SetChannelStatusRequest {
+    lnrpc.ChannelPoint chan_point = 1;
+
+    SetChannelStatusAction action = 2;
+}
+
+enum SetChannelStatusAction {
+    ENABLE = 0;
+    DISABLE = 2;
+    AUTO = 3;
+}
+
+message SetChannelStatusResponse {
 }

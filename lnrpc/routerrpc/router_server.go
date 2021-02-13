@@ -697,3 +697,10 @@ func (s *Server) HtlcInterceptor(stream Router_HtlcInterceptorServer) error {
 	// run the forward interceptor.
 	return newForwardInterceptor(s, stream).run()
 }
+
+// SetChannelStatus allows channel state to be set manually.
+func (s *Server) SetChannelStatus(ctx context.Context,
+	req *SetChannelStatusRequest) (*SetChannelStatusResponse, error) {
+
+	return nil, fmt.Errorf("unimplemented")
+}
