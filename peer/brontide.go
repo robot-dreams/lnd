@@ -2285,7 +2285,7 @@ func (p *Brontide) reenableActiveChannels() {
 	// disabled bit to false and send out a new ChannelUpdate. If this
 	// channel is already active, the update won't be sent.
 	for _, chanPoint := range activePublicChans {
-		err := p.cfg.ChanStatusMgr.RequestEnable(chanPoint)
+		err := p.cfg.ChanStatusMgr.RequestEnable(chanPoint, false)
 		if err != nil {
 			peerLog.Errorf("Unable to enable channel %v: %v",
 				chanPoint, err)

@@ -142,7 +142,7 @@ type ChainArbitratorConfig struct {
 
 	// DisableChannel disables a channel, resulting in it not being able to
 	// forward payments.
-	DisableChannel func(wire.OutPoint) error
+	DisableChannel func(wire.OutPoint, bool) error
 
 	// Sweeper allows resolvers to sweep their final outputs.
 	Sweeper UtxoSweeper
@@ -1012,7 +1012,7 @@ func (c *ChainArbitrator) ForceCloseContract(chanPoint wire.OutPoint) (*wire.Msg
 	// Before closing, we'll attempt to send a disable update for the
 	// channel. We do so before closing the channel as otherwise the current
 	// edge policy won't be retrievable from the graph.
-	if err := c.cfg.DisableChannel(chanPoint); err != nil {
+	if err := c.cfg.DisableChannel(chanPoint, false); err != nil {
 		log.Warnf("Unable to disable channel %v on "+
 			"close: %v", chanPoint, err)
 	}

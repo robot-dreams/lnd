@@ -89,7 +89,7 @@ type ChanCloseCfg struct {
 
 	// DisableChannel disables a channel, resulting in it not being able to
 	// forward payments.
-	DisableChannel func(wire.OutPoint) error
+	DisableChannel func(wire.OutPoint, bool) error
 
 	// Disconnect will disconnect from the remote peer in this close.
 	Disconnect func() error
@@ -217,7 +217,7 @@ func (c *ChanCloser) initChanShutdown() (*lnwire.Shutdown, error) {
 	// Before closing, we'll attempt to send a disable update for the channel.
 	// We do so before closing the channel as otherwise the current edge policy
 	// won't be retrievable from the graph.
-	if err := c.cfg.DisableChannel(c.chanPoint); err != nil {
+	if err := c.cfg.DisableChannel(c.chanPoint, false); err != nil {
 		chancloserLog.Warnf("Unable to disable channel %v on close: %v",
 			c.chanPoint, err)
 	}

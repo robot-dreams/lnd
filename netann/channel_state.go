@@ -26,6 +26,11 @@ const (
 	// ChanStatusDisabled indicates that the channel's last announcement has
 	// the disabled bit set.
 	ChanStatusDisabled
+
+	// ChanStatusManuallyDisabled indicates that the channel's last
+	// announcement had the disabled bit set, and that the channel should
+	// not be automatically re-enabled by background processes.
+	ChanStatusManuallyDisabled
 )
 
 // ChannelState describes the ChanStatusManager's view of a channel, and
@@ -60,6 +65,14 @@ func (s *channelStates) markEnabled(outpoint wire.OutPoint) {
 func (s *channelStates) markDisabled(outpoint wire.OutPoint) {
 	(*s)[outpoint] = ChannelState{
 		Status: ChanStatusDisabled,
+	}
+}
+
+// markManuallyDisabled creates a channelState using
+// ChanStatusManuallyDisabled.
+func (s *channelStates) markManuallyDisabled(outpoint wire.OutPoint) {
+	(*s)[outpoint] = ChannelState{
+		Status: ChanStatusManuallyDisabled,
 	}
 }
 
