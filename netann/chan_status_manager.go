@@ -105,6 +105,10 @@ type ChanStatusManager struct {
 	// primary event loop.
 	disableRequests chan statusRequest
 
+	// autoRequests pipes external requests to restore automatic channel
+	// state management into the primary event loop.
+	autoRequests chan statusRequest
+
 	// statusSampleTicker fires at the interval prescribed by
 	// ChanStatusSampleInterval to check if channels in chanStates have
 	// become inactive.
@@ -148,6 +152,7 @@ func NewChanStatusManager(cfg *ChanStatusConfig) (*ChanStatusManager, error) {
 		statusSampleTicker: time.NewTicker(cfg.ChanStatusSampleInterval),
 		enableRequests:     make(chan statusRequest),
 		disableRequests:    make(chan statusRequest),
+		autoRequests:       make(chan statusRequest),
 		quit:               make(chan struct{}),
 	}, nil
 }
@@ -239,6 +244,13 @@ func (m *ChanStatusManager) RequestDisable(outpoint wire.OutPoint,
 	return m.submitRequest(m.disableRequests, outpoint, manual)
 }
 
+// RequestAuto submits a request to restore automatic channel state management.
+// If the channel is in the state ChanStatusManuallyDisabled, it will be moved
+// back to the state ChanStatusDisabld. Otherwise, no action will be taken.
+func (m *ChanStatusManager) RequestAuto(outpoint wire.OutPoint) error {
+	return m.submitRequest(m.autoRequests, outpoint, true)
+}
+
 // statusRequest is passed to the statusManager to request a change in status
 // for a particular channel point.  The exact action is governed by passing the
 // request through one of the enableRequests or disableRequests channels.
@@ -296,6 +308,10 @@ func (m *ChanStatusManager) statusManager() {
 		// Process any requests to mark channel as disabled.
 		case req := <-m.disableRequests:
 			req.errChan <- m.processDisableRequest(req.outpoint, req.manual)
+
+		// Process any requests to restore automatic channel state management.
+		case req := <-m.autoRequests:
+			req.errChan <- m.processAutoRequest(req.outpoint)
 
 		// Use long-polling to detect when channels become inactive.
 		case <-m.statusSampleTicker.C:
@@ -422,6 +438,20 @@ func (m *ChanStatusManager) processDisableRequest(outpoint wire.OutPoint,
 		delete(m.chanStates, outpoint)
 	}
 
+	return nil
+}
+
+// processAutoRequest restores automatic channel state management for the
+// given channel.
+func (m *ChanStatusManager) processAutoRequest(outpoint wire.OutPoint) error {
+	curState, err := m.getOrInitChanStatus(outpoint)
+	if err != nil {
+		return err
+	}
+
+	if curState.Status == ChanStatusManuallyDisabled {
+		m.chanStates.markDisabled(outpoint)
+	}
 	return nil
 }
 
