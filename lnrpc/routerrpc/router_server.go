@@ -10,6 +10,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/lightningnetwork/lnd/channeldb"
@@ -112,6 +113,10 @@ var (
 			Action: "read",
 		}},
 		"/routerrpc.Router/HtlcInterceptor": {{
+			Entity: "offchain",
+			Action: "write",
+		}},
+		"/routerrpc.Router/SetChannelStatus": {{
 			Entity: "offchain",
 			Action: "write",
 		}},
@@ -698,9 +703,36 @@ func (s *Server) HtlcInterceptor(stream Router_HtlcInterceptorServer) error {
 	return newForwardInterceptor(s, stream).run()
 }
 
+func extractOutPoint(req *SetChannelStatusRequest) (*wire.OutPoint, error) {
+	chanPoint := req.GetChanPoint()
+	txid, err := lnrpc.GetChanPointFundingTxid(chanPoint)
+	if err != nil {
+		return nil, err
+	}
+	index := chanPoint.OutputIndex
+	return wire.NewOutPoint(txid, index), nil
+}
+
 // SetChannelStatus allows channel state to be set manually.
 func (s *Server) SetChannelStatus(ctx context.Context,
 	req *SetChannelStatusRequest) (*SetChannelStatusResponse, error) {
 
-	return nil, fmt.Errorf("unimplemented")
+	outPoint, err := extractOutPoint(req)
+	if err != nil {
+		return nil, err
+	}
+
+	action := req.GetAction()
+	switch action {
+	case SetChannelStatusAction_ENABLE:
+		s.cfg.RouterBackend.SetChannelEnabled(*outPoint)
+	case SetChannelStatusAction_DISABLE:
+		s.cfg.RouterBackend.SetChannelDisabled(*outPoint)
+	case SetChannelStatusAction_AUTO:
+		s.cfg.RouterBackend.SetChannelAuto(*outPoint)
+	default:
+		return nil, fmt.Errorf("Unrecognized ChannelStatusAction %v", action)
+	}
+
+	return &SetChannelStatusResponse{}, nil
 }
